@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, BeforeInsert, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, BeforeInsert, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Role } from './role.entity';
+import { UserPermission } from './user-permission.entity';
 
 @Entity('users')
 export class User {
@@ -48,6 +49,9 @@ export class User {
   })
   roles: Role[];
 
+  @OneToMany(() => UserPermission, userPermission => userPermission.user)
+  userPermissions: UserPermission[];
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -72,9 +76,49 @@ export class User {
     return this.roles?.some(role => role.name === roleName) || false;
   }
 
-  hasPermission(permission: string): boolean {
-    return this.roles?.some(role => 
-      role.permissions?.includes(permission)
+  hasPermission(permissionName: string): boolean {
+    // Check role-based permissions
+    const hasRolePermission = this.roles?.some(role => 
+      role.rolePermissions?.some(rp => rp.permission.name === permissionName && rp.isActive)
     ) || false;
+
+    // Check user-specific permissions (override)
+    const userPermission = this.userPermissions?.find(up => 
+      up.permission.name === permissionName && up.isActive &&
+      (!up.expiresAt || up.expiresAt > new Date())
+    );
+
+    if (userPermission) {
+      return userPermission.isGranted;
+    }
+
+    return hasRolePermission;
+  }
+
+  hasAnyPermission(permissions: string[]): boolean {
+    return permissions.some(permission => this.hasPermission(permission));
+  }
+
+  getEffectivePermissions(): string[] {
+    const rolePermissions = this.roles?.flatMap(role => 
+      role.rolePermissions?.filter(rp => rp.isActive).map(rp => rp.permission.name) || []
+    ) || [];
+
+    const userPermissions = this.userPermissions?.filter(up => 
+      up.isActive && (!up.expiresAt || up.expiresAt > new Date())
+    ) || [];
+
+    // Apply user permission overrides
+    const effectivePermissions = new Set(rolePermissions);
+    
+    userPermissions.forEach(up => {
+      if (up.isGranted) {
+        effectivePermissions.add(up.permission.name);
+      } else {
+        effectivePermissions.delete(up.permission.name);
+      }
+    });
+
+    return Array.from(effectivePermissions);
   }
 } 

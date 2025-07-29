@@ -3,84 +3,68 @@ import { RoomType } from './room-type.entity';
 import { HotelImage } from './hotel-image.entity';
 import { Room } from './room.entity';
 import { HotelType } from './hotel-type.entity';
+import { HotelFeature } from './hotel-feature.entity';
 
 @Entity('hotels')
 export class Hotel {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ length: 255 })
   name: string;
 
-  @Column({ nullable: true })
-  chainName: string;
-
-  @Column({ nullable: true })
-  brandName: string;
-
-  @Column()
+  @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column('int')
-  starRating: number;
-
-  @ManyToOne(() => HotelType, hotelType => hotelType.hotels)
-  hotelType: HotelType;
-
-  @Column()
-  email: string;
-
-  @Column()
-  phone: string;
-
-  @Column({ nullable: true })
-  website: string;
-
-  @Column()
-  checkInTime: string;
-
-  @Column()
-  checkOutTime: string;
-
-  @Column()
-  country: string;
-
-  @Column()
-  city: string;
-
-  @Column()
+  @Column({ length: 255 })
   address: string;
 
-  @Column({ nullable: true })
-  postalCode: string;
+  @Column({ length: 100 })
+  city: string;
 
-  @Column('decimal', { precision: 10, scale: 7 })
+  @Column({ length: 100 })
+  country: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
   latitude: number;
 
-  @Column('decimal', { precision: 10, scale: 7 })
+  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
   longitude: number;
 
-  @Column('json')
-  facilities: any;
+  @Column({ length: 20, nullable: true })
+  phone: string;
 
-  @Column('json')
-  policies: any;
+  @Column({ length: 255, nullable: true })
+  email: string;
+
+  @Column({ length: 255, nullable: true })
+  website: string;
+
+  @Column({ type: 'int', default: 1 })
+  starRating: number;
+
+  @Column({ type: 'json', nullable: true })
+  features: number[];
 
   @Column({ default: true })
   isActive: boolean;
-
-  @OneToMany(() => RoomType, roomType => roomType.hotel)
-  roomTypes: RoomType[];
-
-  @OneToMany(() => Room, room => room.hotel)
-  rooms: Room[];
-
-  @OneToMany(() => HotelImage, image => image.hotel)
-  images: HotelImage[];
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // Relations
+  @OneToMany(() => Room, room => room.hotel)
+  rooms: Room[];
+
+  @ManyToOne(() => HotelType, hotelType => hotelType.hotels)
+  hotelType: HotelType;
+
+  @OneToMany(() => RoomType, roomType => roomType.hotel)
+  roomTypes: RoomType[];
+
+  @OneToMany(() => HotelImage, hotelImage => hotelImage.hotel)
+  images: HotelImage[];
 } 

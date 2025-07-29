@@ -1,185 +1,215 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Put, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { HotelsService } from './hotels.service';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
+import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { CreateHotelImageDto } from './dto/create-hotel-image.dto';
 import { CreateHotelTypeDto } from './dto/create-hotel-type.dto';
 import { UpdateHotelTypeDto } from './dto/update-hotel-type.dto';
+import { CreateHotelFeatureDto } from './dto/create-hotel-feature.dto';
+import { UpdateHotelFeatureDto } from './dto/update-hotel-feature.dto';
+import { Hotel } from './entities/hotel.entity';
+import { RoomType } from './entities/room-type.entity';
+import { HotelImage } from './entities/hotel-image.entity';
+import { HotelType } from './entities/hotel-type.entity';
+import { HotelFeature } from './entities/hotel-feature.entity';
+import { RequirePermission, RequireAnyPermission, HotelManagement } from '../../common/decorators/permissions.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
-@ApiTags('hotels')
+@ApiTags('Hotels')
 @Controller('hotels')
 export class HotelsController {
   constructor(private readonly hotelsService: HotelsService) {}
 
-  // Hotel Types Endpoints
-  @Post('types')
-  @ApiOperation({ summary: 'Create a new hotel type' })
-  @ApiResponse({ status: 201, description: 'Hotel type created successfully' })
-  createHotelType(@Body() createHotelTypeDto: CreateHotelTypeDto) {
-    return this.hotelsService.createHotelType(createHotelTypeDto);
-  }
+  // ==================== HOTEL CRUD ====================
 
-  @Get('types')
-  @ApiOperation({ summary: 'Get all hotel types' })
-  @ApiResponse({ status: 200, description: 'List of hotel types' })
-  findAllHotelTypes() {
-    return this.hotelsService.findAllHotelTypes();
-  }
-
-  @Get('types/:id')
-  @ApiOperation({ summary: 'Get a hotel type by ID' })
-  @ApiResponse({ status: 200, description: 'Hotel type found' })
-  @ApiResponse({ status: 404, description: 'Hotel type not found' })
-  findHotelTypeById(@Param('id', ParseIntPipe) id: number) {
-    return this.hotelsService.findHotelTypeById(id);
-  }
-
-  @Patch('types/:id')
-  @ApiOperation({ summary: 'Update a hotel type' })
-  @ApiResponse({ status: 200, description: 'Hotel type updated successfully' })
-  @ApiResponse({ status: 404, description: 'Hotel type not found' })
-  updateHotelType(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateHotelTypeDto: UpdateHotelTypeDto
-  ) {
-    return this.hotelsService.updateHotelType(id, updateHotelTypeDto);
-  }
-
-  @Delete('types/:id')
-  @ApiOperation({ summary: 'Delete a hotel type' })
-  @ApiResponse({ status: 200, description: 'Hotel type deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Hotel type not found' })
-  removeHotelType(@Param('id', ParseIntPipe) id: number) {
-    return this.hotelsService.removeHotelType(id);
-  }
-
-  // Hotels Endpoints - Updated
+  @RequirePermission('hotels.create')
   @Post()
-  @ApiOperation({ summary: 'Create a new hotel' })
-  @ApiResponse({ status: 201, description: 'Hotel created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  create(@Body() createHotelDto: CreateHotelDto) {
+  @ApiOperation({ summary: 'Create hotel' })
+  @ApiResponse({ status: 201, description: 'Hotel created successfully.', type: Hotel })
+  create(@Body() createHotelDto: CreateHotelDto): Promise<Hotel> {
     return this.hotelsService.create(createHotelDto);
   }
 
+  @Public()
   @Get()
-  @ApiOperation({ summary: 'Get all hotels with optional filtering' })
-  @ApiResponse({ status: 200, description: 'List of hotels' })
-  @ApiQuery({ name: 'type', required: false, description: 'Filter by hotel type ID' })
-  @ApiQuery({ name: 'city', required: false, description: 'Filter by city' })
-  @ApiQuery({ name: 'stars', required: false, description: 'Filter by star rating' })
-  findAll(
-    @Query('type') type?: string,
-    @Query('city') city?: string,
-    @Query('stars') stars?: string
-  ) {
-    if (type) {
-      return this.hotelsService.findByHotelType(parseInt(type));
+  @ApiOperation({ summary: 'Get all hotels' })
+  @ApiResponse({ status: 200, description: 'List of hotels', type: [Hotel] })
+  @ApiQuery({ name: 'feature', required: false, description: 'Filter by feature ID' })
+  findAll(@Query('feature') feature?: number): Promise<Hotel[]> {
+    if (feature) {
+      return this.hotelsService.findHotelsByFeature(feature);
     }
-    
     return this.hotelsService.findAll();
   }
 
+  @Public()
   @Get(':id')
-  @ApiOperation({ summary: 'Get a hotel by ID' })
-  @ApiResponse({ status: 200, description: 'Hotel found' })
-  @ApiResponse({ status: 404, description: 'Hotel not found' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  @ApiOperation({ summary: 'Get hotel by id' })
+  @ApiResponse({ status: 200, description: 'Hotel found', type: Hotel })
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<Hotel> {
     return this.hotelsService.findOne(id);
   }
 
-  @Put(':id')
+  @RequirePermission('hotels.update')
+  @Patch(':id')
   @ApiOperation({ summary: 'Update hotel' })
-  @ApiResponse({ status: 200, description: 'Hotel updated successfully', type: Hotel })
-  async update(
-    @Param('id') id: number,
-    @Body() updateHotelDto: Partial<CreateHotelDto>,
-  ): Promise<Hotel | null> {
+  @ApiResponse({ status: 200, description: 'Hotel updated successfully.', type: Hotel })
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateHotelDto: UpdateHotelDto): Promise<Hotel> {
     return this.hotelsService.update(id, updateHotelDto);
   }
 
+  @RequirePermission('hotels.delete')
   @Delete(':id')
   @ApiOperation({ summary: 'Delete hotel' })
-  @ApiResponse({ status: 200, description: 'Hotel deleted successfully' })
-  async delete(@Param('id') id: number): Promise<void> {
-    return this.hotelsService.delete(id);
+  @ApiResponse({ status: 200, description: 'Hotel deleted successfully.' })
+  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.hotelsService.remove(id);
   }
 
-  // Room Type Management
-  @Post(':hotelId/room-types')
-  @ApiOperation({ summary: 'Create new room type for hotel' })
-  @ApiResponse({ status: 201, description: 'Room type created successfully' })
-  async createRoomType(
-    @Param('hotelId') hotelId: number,
-    @Body() createRoomTypeDto: CreateRoomTypeDto,
-  ) {
-    return this.hotelsService.createRoomType(hotelId, createRoomTypeDto);
+  // ==================== ROOM TYPES ====================
+
+  @HotelManagement()
+  @Post('room-types')
+  @ApiOperation({ summary: 'Create room type' })
+  @ApiResponse({ status: 201, description: 'Room type created successfully.', type: RoomType })
+  createRoomType(@Body() createRoomTypeDto: CreateRoomTypeDto): Promise<RoomType> {
+    return this.hotelsService.createRoomType(createRoomTypeDto);
   }
 
-  @Get(':hotelId/room-types')
-  @ApiOperation({ summary: 'Get all room types for hotel' })
-  @ApiResponse({ status: 200, description: 'Return hotel room types' })
-  async getRoomTypes(@Param('hotelId') hotelId: number) {
-    return this.hotelsService.getRoomTypes(hotelId);
+  @Public()
+  @Get('room-types')
+  @ApiOperation({ summary: 'Get all room types' })
+  @ApiResponse({ status: 200, description: 'List of room types', type: [RoomType] })
+  findAllRoomTypes(): Promise<RoomType[]> {
+    return this.hotelsService.findAllRoomTypes();
   }
 
-  // Hotel Image Management
+  @RequirePermission('hotels.manage_rooms')
+  @Patch('room-types/:id')
+  @ApiOperation({ summary: 'Update room type' })
+  @ApiResponse({ status: 200, description: 'Room type updated successfully.', type: RoomType })
+  updateRoomType(@Param('id', ParseIntPipe) id: number, @Body() updateRoomTypeDto: UpdateRoomTypeDto): Promise<RoomType> {
+    return this.hotelsService.updateRoomType(id, updateRoomTypeDto);
+  }
+
+  // ==================== HOTEL IMAGES ====================
+
+  @RequirePermission('hotels.update')
   @Post(':hotelId/images')
-  @ApiOperation({ summary: 'Add image to hotel' })
-  @ApiResponse({ status: 201, description: 'Image added successfully' })
-  async addHotelImage(
-    @Param('hotelId') hotelId: number,
-    @Body() createImageDto: CreateHotelImageDto,
-  ) {
-    return this.hotelsService.addHotelImage(hotelId, createImageDto);
+  @ApiOperation({ summary: 'Add hotel image' })
+  @ApiResponse({ status: 201, description: 'Hotel image added successfully.', type: HotelImage })
+  addHotelImage(@Param('hotelId', ParseIntPipe) hotelId: number, @Body() createHotelImageDto: CreateHotelImageDto): Promise<HotelImage> {
+    return this.hotelsService.addHotelImage(hotelId, createHotelImageDto);
   }
 
-  @Get(':hotelId/images')
-  @ApiOperation({ summary: 'Get all hotel images' })
-  @ApiResponse({ status: 200, description: 'Return hotel images' })
-  async getHotelImages(@Param('hotelId') hotelId: number) {
-    return this.hotelsService.getHotelImages(hotelId);
+  // ==================== HOTEL TYPES ====================
+
+  @RequireAnyPermission('hotels.create', 'hotels.update', 'system.admin')
+  @Post('types')
+  @ApiOperation({ summary: 'Create hotel type' })
+  @ApiResponse({ status: 201, description: 'Hotel type created successfully.', type: HotelType })
+  createHotelType(@Body() createHotelTypeDto: CreateHotelTypeDto): Promise<HotelType> {
+    return this.hotelsService.createHotelType(createHotelTypeDto);
   }
 
-  @Put(':hotelId/images/:imageId')
-  @ApiOperation({ summary: 'Update hotel image' })
-  @ApiResponse({ status: 200, description: 'Image updated successfully' })
-  async updateHotelImage(
-    @Param('hotelId') hotelId: number,
-    @Param('imageId') imageId: number,
-    @Body() updateImageDto: Partial<CreateHotelImageDto>,
-  ) {
-    return this.hotelsService.updateHotelImage(imageId, updateImageDto);
+  @Public()
+  @Get('types')
+  @ApiOperation({ summary: 'Get all hotel types' })
+  @ApiResponse({ status: 200, description: 'List of hotel types', type: [HotelType] })
+  findAllHotelTypes(): Promise<HotelType[]> {
+    return this.hotelsService.findAllHotelTypes();
   }
 
-  @Delete(':hotelId/images/:imageId')
-  @ApiOperation({ summary: 'Delete hotel image' })
-  @ApiResponse({ status: 200, description: 'Image deleted successfully' })
-  async deleteHotelImage(
-    @Param('hotelId') hotelId: number,
-    @Param('imageId') imageId: number,
-  ) {
-    return this.hotelsService.deleteHotelImage(imageId);
+  @Public()
+  @Get('types/:id')
+  @ApiOperation({ summary: 'Get hotel type by id' })
+  @ApiResponse({ status: 200, description: 'Hotel type found', type: HotelType })
+  findHotelTypeById(@Param('id', ParseIntPipe) id: number): Promise<HotelType> {
+    return this.hotelsService.findHotelTypeById(id);
   }
 
-  @Put(':hotelId/images/:imageId/set-main')
-  @ApiOperation({ summary: 'Set image as main hotel image' })
-  @ApiResponse({ status: 200, description: 'Main image set successfully' })
-  async setMainImage(
-    @Param('hotelId') hotelId: number,
-    @Param('imageId') imageId: number,
-  ) {
-    return this.hotelsService.setMainHotelImage(hotelId, imageId);
+  @RequirePermission('hotels.update')
+  @Put('types/:id')
+  @ApiOperation({ summary: 'Update hotel type' })
+  @ApiResponse({ status: 200, description: 'Hotel type updated successfully.', type: HotelType })
+  updateHotelType(@Param('id', ParseIntPipe) id: number, @Body() updateHotelTypeDto: UpdateHotelTypeDto): Promise<HotelType> {
+    return this.hotelsService.updateHotelType(id, updateHotelTypeDto);
+  }
+
+  @RequirePermission('hotels.delete')
+  @Delete('types/:id')
+  @ApiOperation({ summary: 'Delete hotel type' })
+  @ApiResponse({ status: 200, description: 'Hotel type deleted successfully.' })
+  deleteHotelType(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.hotelsService.deleteHotelType(id);
+  }
+
+  // ==================== HOTEL FEATURES ====================
+
+  @RequireAnyPermission('hotels.create', 'hotels.update', 'system.admin')
+  @Post('features')
+  @ApiOperation({ summary: 'Create hotel feature' })
+  @ApiResponse({ status: 201, description: 'Hotel feature created successfully.', type: HotelFeature })
+  createHotelFeature(@Body() createHotelFeatureDto: CreateHotelFeatureDto): Promise<HotelFeature> {
+    return this.hotelsService.createHotelFeature(createHotelFeatureDto);
+  }
+
+  @Public()
+  @Get('features')
+  @ApiOperation({ summary: 'Get all hotel features' })
+  @ApiResponse({ status: 200, description: 'List of hotel features', type: [HotelFeature] })
+  findAllHotelFeatures(): Promise<HotelFeature[]> {
+    return this.hotelsService.findAllHotelFeatures();
+  }
+
+  @Public()
+  @Get('features/:id')
+  @ApiOperation({ summary: 'Get hotel feature by id' })
+  @ApiResponse({ status: 200, description: 'Hotel feature found', type: HotelFeature })
+  findHotelFeatureById(@Param('id', ParseIntPipe) id: number): Promise<HotelFeature> {
+    return this.hotelsService.findHotelFeatureById(id);
+  }
+
+  @RequirePermission('hotels.update')
+  @Put('features/:id')
+  @ApiOperation({ summary: 'Update hotel feature' })
+  @ApiResponse({ status: 200, description: 'Hotel feature updated successfully.', type: HotelFeature })
+  updateHotelFeature(@Param('id', ParseIntPipe) id: number, @Body() updateHotelFeatureDto: UpdateHotelFeatureDto): Promise<HotelFeature> {
+    return this.hotelsService.updateHotelFeature(id, updateHotelFeatureDto);
+  }
+
+  @RequirePermission('hotels.delete')
+  @Delete('features/:id')
+  @ApiOperation({ summary: 'Delete hotel feature' })
+  @ApiResponse({ status: 200, description: 'Hotel feature deleted successfully.' })
+  deleteHotelFeature(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.hotelsService.deleteHotelFeature(id);
+  }
+
+  // ==================== FEATURE ASSIGNMENTS ====================
+
+  @RequirePermission('hotels.update')
+  @Post(':hotelId/features')
+  @ApiOperation({ summary: 'Assign features to hotel' })
+  @ApiResponse({ status: 200, description: 'Features assigned to hotel successfully.', type: Hotel })
+  assignFeaturesToHotel(
+    @Param('hotelId', ParseIntPipe) hotelId: number,
+    @Body() body: { featureIds: number[] },
+  ): Promise<Hotel> {
+    return this.hotelsService.assignFeaturesToHotel(hotelId, body.featureIds);
+  }
+
+  @RequirePermission('hotels.update')
+  @Post('types/:hotelTypeId/features')
+  @ApiOperation({ summary: 'Assign features to hotel type' })
+  @ApiResponse({ status: 200, description: 'Features assigned to hotel type successfully.', type: HotelType })
+  assignFeaturesToHotelType(
+    @Param('hotelTypeId', ParseIntPipe) hotelTypeId: number,
+    @Body() body: { featureIds: number[] },
+  ): Promise<HotelType> {
+    return this.hotelsService.assignFeaturesToHotelType(hotelTypeId, body.featureIds);
   }
 } 

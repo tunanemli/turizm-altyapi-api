@@ -1,23 +1,32 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { LocalStrategy } from './strategies/local.strategy';
+import { UsersModule } from '../users/users.module';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 
 @Module({
   imports: [
-    UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-super-secret-key-here',
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
+      secret: process.env.JWT_SECRET || 'fallback-secret-key',
+      signOptions: { expiresIn: '24h' },
     }),
+    UsersModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    JwtAuthGuard,
+    PermissionsGuard,
+  ],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [
+    AuthService,
+    JwtAuthGuard,
+    PermissionsGuard,
+    JwtModule,
+  ],
 })
 export class AuthModule {} 

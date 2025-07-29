@@ -1,19 +1,19 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Hotel } from './hotel.entity';
+import { Transfer } from './transfer.entity';
 
-@Entity('hotel_types')
-export class HotelType {
+@Entity('transfer_types')
+export class TransferType {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 255, unique: true })
+  @Column({ length: 255 })
   name: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'json', nullable: true })
-  features: number[];
+  @Column({ length: 100, nullable: true })
+  icon: string;
 
   @Column({ default: true })
   isActive: boolean;
@@ -25,6 +25,6 @@ export class HotelType {
   updatedAt: Date;
 
   // Relations
-  @OneToMany(() => Hotel, hotel => hotel.hotelType)
-  hotels: Hotel[];
+  @OneToMany(() => Transfer, transfer => transfer.transferType)
+  transfers: Transfer[];
 }
