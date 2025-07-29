@@ -6,6 +6,7 @@ import { RoomPrice } from './entities/room-price.entity';
 import { RoomInventory } from './entities/room-inventory.entity';
 import { HotelImage } from './entities/hotel-image.entity';
 import { RoomImage } from './entities/room-image.entity';
+import { Room } from './entities/room.entity';
 import { HotelsService } from './hotels.service';
 import { HotelsController } from './hotels.controller';
 
@@ -17,7 +18,8 @@ import { HotelsController } from './hotels.controller';
       RoomPrice, 
       RoomInventory, 
       HotelImage, 
-      RoomImage
+      RoomImage,
+      Room
     ]),
   ],
   providers: [HotelsService],

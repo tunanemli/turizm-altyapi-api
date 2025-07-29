@@ -3,6 +3,7 @@ import { Hotel } from './hotel.entity';
 import { RoomPrice } from './room-price.entity';
 import { RoomInventory } from './room-inventory.entity';
 import { RoomImage } from './room-image.entity';
+import { Room } from './room.entity';
 
 @Entity('room_types')
 export class RoomType {
@@ -59,6 +60,9 @@ export class RoomType {
 
   @OneToMany(() => RoomInventory, inventory => inventory.roomType)
   inventory: RoomInventory[];
+
+  @OneToMany(() => Room, room => room.roomType)
+  rooms: Room[];
 
   @OneToMany(() => RoomImage, image => image.roomType)
   images: RoomImage[];

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { RoomType } from './room-type.entity';
 import { HotelImage } from './hotel-image.entity';
+import { Room } from './room.entity';
 
 @Entity('hotels')
 export class Hotel {
@@ -66,6 +67,9 @@ export class Hotel {
 
   @OneToMany(() => RoomType, roomType => roomType.hotel)
   roomTypes: RoomType[];
+
+  @OneToMany(() => Room, room => room.hotel)
+  rooms: Room[];
 
   @OneToMany(() => HotelImage, image => image.hotel)
   images: HotelImage[];

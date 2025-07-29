@@ -7,6 +7,7 @@ import { RoomPrice } from './entities/room-price.entity';
 import { RoomInventory } from './entities/room-inventory.entity';
 import { HotelImage } from './entities/hotel-image.entity';
 import { RoomImage } from './entities/room-image.entity';
+import { Room } from './entities/room.entity';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { CreateHotelImageDto } from './dto/create-hotel-image.dto';
@@ -26,6 +27,8 @@ export class HotelsService {
     private readonly hotelImageRepository: Repository<HotelImage>,
     @InjectRepository(RoomImage)
     private readonly roomImageRepository: Repository<RoomImage>,
+    @InjectRepository(Room)
+    private readonly roomRepository: Repository<Room>,
   ) {}
 
   async findAll(filters?: { city?: string; stars?: number }): Promise<Hotel[]> {
