@@ -8,9 +8,12 @@ import { RoomInventory } from './entities/room-inventory.entity';
 import { HotelImage } from './entities/hotel-image.entity';
 import { RoomImage } from './entities/room-image.entity';
 import { Room } from './entities/room.entity';
+import { HotelType } from './entities/hotel-type.entity';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { CreateHotelImageDto } from './dto/create-hotel-image.dto';
+import { CreateHotelTypeDto } from './dto/create-hotel-type.dto';
+import { UpdateHotelTypeDto } from './dto/update-hotel-type.dto';
 
 @Injectable()
 export class HotelsService {
@@ -29,34 +32,91 @@ export class HotelsService {
     private readonly roomImageRepository: Repository<RoomImage>,
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
+    @InjectRepository(HotelType)
+    private readonly hotelTypeRepository: Repository<HotelType>,
   ) {}
 
-  async findAll(filters?: { city?: string; stars?: number }): Promise<Hotel[]> {
-    const queryBuilder = this.hotelRepository.createQueryBuilder('hotel')
-      .leftJoinAndSelect('hotel.roomTypes', 'roomTypes')
-      .leftJoinAndSelect('hotel.images', 'images');
-
-    if (filters?.city) {
-      queryBuilder.where('hotel.city = :city', { city: filters.city });
-    }
-
-    if (filters?.stars) {
-      queryBuilder.andWhere('hotel.starRating = :stars', { stars: filters.stars });
-    }
-
-    return queryBuilder.getMany();
+  // Hotel Types
+  async createHotelType(createHotelTypeDto: CreateHotelTypeDto): Promise<HotelType> {
+    const hotelType = this.hotelTypeRepository.create(createHotelTypeDto);
+    return await this.hotelTypeRepository.save(hotelType);
   }
 
-  async findOne(id: number): Promise<Hotel | null> {
-    return this.hotelRepository.findOne({
-      where: { id },
-      relations: ['roomTypes', 'roomTypes.prices', 'roomTypes.inventory', 'images', 'roomTypes.images'],
+  async findAllHotelTypes(): Promise<HotelType[]> {
+    return await this.hotelTypeRepository.find({
+      where: { isActive: true },
+      order: { sortOrder: 'ASC', name: 'ASC' }
     });
   }
 
+  async findHotelTypeById(id: number): Promise<HotelType> {
+    const hotelType = await this.hotelTypeRepository.findOne({
+      where: { id, isActive: true },
+      relations: ['hotels']
+    });
+    
+    if (!hotelType) {
+      throw new Error(`Hotel type with ID ${id} not found`);
+    }
+    
+    return hotelType;
+  }
+
+  async updateHotelType(id: number, updateHotelTypeDto: UpdateHotelTypeDto): Promise<HotelType> {
+    const hotelType = await this.findHotelTypeById(id);
+    Object.assign(hotelType, updateHotelTypeDto);
+    return await this.hotelTypeRepository.save(hotelType);
+  }
+
+  async removeHotelType(id: number): Promise<void> {
+    const hotelType = await this.findHotelTypeById(id);
+    hotelType.isActive = false;
+    await this.hotelTypeRepository.save(hotelType);
+  }
+
+  // Hotels - updated to include hotelType
   async create(createHotelDto: CreateHotelDto): Promise<Hotel> {
-    const hotel = this.hotelRepository.create(createHotelDto);
-    return this.hotelRepository.save(hotel);
+    // Verify hotel type exists
+    await this.findHotelTypeById(createHotelDto.hotelTypeId);
+    
+    const hotel = this.hotelRepository.create({
+      ...createHotelDto,
+      hotelType: { id: createHotelDto.hotelTypeId }
+    });
+    
+    return await this.hotelRepository.save(hotel);
+  }
+
+  async findAll(): Promise<Hotel[]> {
+    return await this.hotelRepository.find({
+      where: { isActive: true },
+      relations: ['hotelType', 'images', 'roomTypes'],
+      order: { createdAt: 'DESC' }
+    });
+  }
+
+  async findOne(id: number): Promise<Hotel> {
+    const hotel = await this.hotelRepository.findOne({
+      where: { id, isActive: true },
+      relations: ['hotelType', 'roomTypes', 'rooms', 'images']
+    });
+    
+    if (!hotel) {
+      throw new Error(`Hotel with ID ${id} not found`);
+    }
+    
+    return hotel;
+  }
+
+  async findByHotelType(hotelTypeId: number): Promise<Hotel[]> {
+    return await this.hotelRepository.find({
+      where: { 
+        hotelType: { id: hotelTypeId },
+        isActive: true 
+      },
+      relations: ['hotelType', 'images'],
+      order: { starRating: 'DESC', createdAt: 'DESC' }
+    });
   }
 
   async update(id: number, updateHotelDto: Partial<CreateHotelDto>): Promise<Hotel | null> {

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsObject, IsEmail, Min, Max } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsObject, IsEmail, Min, Max, IsInt } from 'class-validator';
 
 export class CreateHotelDto {
   @ApiProperty({ description: 'Hotel name' })
@@ -25,6 +25,10 @@ export class CreateHotelDto {
   @Min(1)
   @Max(5)
   starRating: number;
+
+  @ApiProperty({ description: 'Hotel type ID', example: 1 })
+  @IsInt()
+  hotelTypeId: number;
 
   @ApiProperty({ description: 'Hotel email address' })
   @IsEmail()

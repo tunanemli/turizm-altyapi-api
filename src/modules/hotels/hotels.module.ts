@@ -7,6 +7,7 @@ import { RoomInventory } from './entities/room-inventory.entity';
 import { HotelImage } from './entities/hotel-image.entity';
 import { RoomImage } from './entities/room-image.entity';
 import { Room } from './entities/room.entity';
+import { HotelType } from './entities/hotel-type.entity';
 import { HotelsService } from './hotels.service';
 import { HotelsController } from './hotels.controller';
 
@@ -19,7 +20,8 @@ import { HotelsController } from './hotels.controller';
       RoomInventory, 
       HotelImage, 
       RoomImage,
-      Room
+      Room,
+      HotelType
     ]),
   ],
   providers: [HotelsService],

@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from 'typeorm';
 import { RoomType } from './room-type.entity';
 import { HotelImage } from './hotel-image.entity';
 import { Room } from './room.entity';
+import { HotelType } from './hotel-type.entity';
 
 @Entity('hotels')
 export class Hotel {
@@ -22,6 +23,9 @@ export class Hotel {
 
   @Column('int')
   starRating: number;
+
+  @ManyToOne(() => HotelType, hotelType => hotelType.hotels)
+  hotelType: HotelType;
 
   @Column()
   email: string;

@@ -1,40 +1,102 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { HotelsService } from './hotels.service';
-import { Hotel } from './entities/hotel.entity';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { CreateHotelImageDto } from './dto/create-hotel-image.dto';
+import { CreateHotelTypeDto } from './dto/create-hotel-type.dto';
+import { UpdateHotelTypeDto } from './dto/update-hotel-type.dto';
 
 @ApiTags('hotels')
 @Controller('hotels')
 export class HotelsController {
   constructor(private readonly hotelsService: HotelsService) {}
 
+  // Hotel Types Endpoints
+  @Post('types')
+  @ApiOperation({ summary: 'Create a new hotel type' })
+  @ApiResponse({ status: 201, description: 'Hotel type created successfully' })
+  createHotelType(@Body() createHotelTypeDto: CreateHotelTypeDto) {
+    return this.hotelsService.createHotelType(createHotelTypeDto);
+  }
+
+  @Get('types')
+  @ApiOperation({ summary: 'Get all hotel types' })
+  @ApiResponse({ status: 200, description: 'List of hotel types' })
+  findAllHotelTypes() {
+    return this.hotelsService.findAllHotelTypes();
+  }
+
+  @Get('types/:id')
+  @ApiOperation({ summary: 'Get a hotel type by ID' })
+  @ApiResponse({ status: 200, description: 'Hotel type found' })
+  @ApiResponse({ status: 404, description: 'Hotel type not found' })
+  findHotelTypeById(@Param('id', ParseIntPipe) id: number) {
+    return this.hotelsService.findHotelTypeById(id);
+  }
+
+  @Patch('types/:id')
+  @ApiOperation({ summary: 'Update a hotel type' })
+  @ApiResponse({ status: 200, description: 'Hotel type updated successfully' })
+  @ApiResponse({ status: 404, description: 'Hotel type not found' })
+  updateHotelType(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateHotelTypeDto: UpdateHotelTypeDto
+  ) {
+    return this.hotelsService.updateHotelType(id, updateHotelTypeDto);
+  }
+
+  @Delete('types/:id')
+  @ApiOperation({ summary: 'Delete a hotel type' })
+  @ApiResponse({ status: 200, description: 'Hotel type deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Hotel type not found' })
+  removeHotelType(@Param('id', ParseIntPipe) id: number) {
+    return this.hotelsService.removeHotelType(id);
+  }
+
+  // Hotels Endpoints - Updated
+  @Post()
+  @ApiOperation({ summary: 'Create a new hotel' })
+  @ApiResponse({ status: 201, description: 'Hotel created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  create(@Body() createHotelDto: CreateHotelDto) {
+    return this.hotelsService.create(createHotelDto);
+  }
+
   @Get()
-  @ApiOperation({ summary: 'Get all hotels' })
+  @ApiOperation({ summary: 'Get all hotels with optional filtering' })
+  @ApiResponse({ status: 200, description: 'List of hotels' })
+  @ApiQuery({ name: 'type', required: false, description: 'Filter by hotel type ID' })
   @ApiQuery({ name: 'city', required: false, description: 'Filter by city' })
   @ApiQuery({ name: 'stars', required: false, description: 'Filter by star rating' })
-  @ApiResponse({ status: 200, description: 'Return all hotels', type: [Hotel] })
-  async findAll(
+  findAll(
+    @Query('type') type?: string,
     @Query('city') city?: string,
-    @Query('stars') stars?: number,
-  ): Promise<Hotel[]> {
-    return this.hotelsService.findAll({ city, stars });
+    @Query('stars') stars?: string
+  ) {
+    if (type) {
+      return this.hotelsService.findByHotelType(parseInt(type));
+    }
+    
+    return this.hotelsService.findAll();
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get hotel by id' })
-  @ApiResponse({ status: 200, description: 'Return hotel details', type: Hotel })
-  async findOne(@Param('id') id: number): Promise<Hotel | null> {
+  @ApiOperation({ summary: 'Get a hotel by ID' })
+  @ApiResponse({ status: 200, description: 'Hotel found' })
+  @ApiResponse({ status: 404, description: 'Hotel not found' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.hotelsService.findOne(id);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create new hotel' })
-  @ApiResponse({ status: 201, description: 'Hotel created successfully', type: Hotel })
-  async create(@Body() createHotelDto: CreateHotelDto): Promise<Hotel> {
-    return this.hotelsService.create(createHotelDto);
   }
 
   @Put(':id')
